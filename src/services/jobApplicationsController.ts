@@ -1,4 +1,5 @@
-import { JobApplication, JobApplicationStatus } from '../types/jobApplication';
+import type { JobApplication } from '../types/jobApplication';
+import { JobApplicationStatus, getStatusDisplayText, getStatusFromInt } from '../types/jobApplication';
 
 export class JobApplicationsController {
   private static mockData: JobApplication[] = [
