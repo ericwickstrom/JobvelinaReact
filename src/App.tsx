@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import JobApplicationForm from './components/JobApplicationForm'
 import JobApplicationsTable from './components/JobApplicationsTable'
 import { JobApplicationsController } from './services/jobApplicationsController'
@@ -16,6 +16,14 @@ function App() {
     setJobApplications(prev => [...prev, newApplication]);
   };
 
+  const handleUpdateApplication = (updatedApplication: JobApplication) => {
+    setJobApplications(prev => 
+      prev.map(app => 
+        app.id === updatedApplication.id ? updatedApplication : app
+      )
+    );
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -26,7 +34,7 @@ function App() {
         
         <div className="space-y-8">
           <JobApplicationForm onApplicationAdded={handleNewApplication} />
-          <JobApplicationsTable jobApplications={jobApplications} />
+          <JobApplicationsTable jobApplications={jobApplications} onUpdate={handleUpdateApplication} />
         </div>
       </div>
     </div>

@@ -1,5 +1,5 @@
 import type { JobApplication } from '../types/jobApplication';
-import { JobApplicationStatus, getStatusDisplayText, getStatusFromInt } from '../types/jobApplication';
+import { JobApplicationStatus } from '../types/jobApplication';
 
 export class JobApplicationsController {
   private static mockData: JobApplication[] = [
@@ -146,6 +146,7 @@ export class JobApplicationsController {
 
   public static addJobApplication(applicationData: Omit<JobApplication, 'id' | 'createDate' | 'modifiedDate'> & { appliedDate?: string }): JobApplication {
     const appliedDate = applicationData.appliedDate ? new Date(applicationData.appliedDate) : new Date();
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { appliedDate: _, ...jobData } = applicationData;
     
     const newApplication: JobApplication = {
@@ -157,5 +158,40 @@ export class JobApplicationsController {
 
     this.mockData.push(newApplication);
     return newApplication;
+  }
+
+  public static updateJobApplication(id: string, updateData: Partial<Omit<JobApplication, 'id' | 'createDate'>>): JobApplication | null {
+    const index = this.mockData.findIndex(app => app.id === id);
+    if (index === -1) {
+      return null;
+    }
+
+    const updatedApplication: JobApplication = {
+      ...this.mockData[index],
+      ...updateData,
+      modifiedDate: new Date()
+    };
+
+    this.mockData[index] = updatedApplication;
+    return updatedApplication;
+  }
+
+  public static deleteJobApplication(id: string): boolean {
+    const index = this.mockData.findIndex(app => app.id === id);
+    if (index === -1) {
+      return false;
+    }
+
+    this.mockData[index] = {
+      ...this.mockData[index],
+      isDeleted: true,
+      modifiedDate: new Date()
+    };
+
+    return true;
+  }
+
+  public static getJobApplicationById(id: string): JobApplication | null {
+    return this.mockData.find(app => app.id === id) || null;
   }
 }
