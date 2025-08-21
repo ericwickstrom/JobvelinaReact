@@ -1,7 +1,21 @@
+import React, { useState, useEffect } from 'react'
+import JobApplicationForm from './components/JobApplicationForm'
 import JobApplicationsTable from './components/JobApplicationsTable'
+import { JobApplicationsController } from './services/jobApplicationsController'
+import type { JobApplication } from './types/jobApplication'
 import './App.css'
 
 function App() {
+  const [jobApplications, setJobApplications] = useState<JobApplication[]>([]);
+
+  useEffect(() => {
+    setJobApplications(JobApplicationsController.getAllJobApplications());
+  }, []);
+
+  const handleNewApplication = (newApplication: JobApplication) => {
+    setJobApplications(prev => [...prev, newApplication]);
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -10,7 +24,10 @@ function App() {
           <p className="text-lg text-gray-600">Track and manage your job applications</p>
         </div>
         
-        <JobApplicationsTable />
+        <div className="space-y-8">
+          <JobApplicationForm onApplicationAdded={handleNewApplication} />
+          <JobApplicationsTable jobApplications={jobApplications} />
+        </div>
       </div>
     </div>
   )

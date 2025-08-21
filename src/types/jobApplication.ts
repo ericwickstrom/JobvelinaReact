@@ -15,6 +15,7 @@ export interface JobApplication {
   createDate: Date;
   modifiedDate: Date;
   status: JobApplicationStatus;
+  notes?: string;
 }
 
 export function getStatusDisplayText(status: JobApplicationStatus): string {

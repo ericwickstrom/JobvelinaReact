@@ -3,8 +3,11 @@ import type { JobApplication } from '../types/jobApplication';
 import { JobApplicationStatus, getStatusDisplayText } from '../types/jobApplication';
 import { JobApplicationsController } from '../services/jobApplicationsController';
 
-const JobApplicationsTable: React.FC = () => {
-  const jobApplications = JobApplicationsController.getAllJobApplications();
+interface JobApplicationsTableProps {
+  jobApplications: JobApplication[];
+}
+
+const JobApplicationsTable: React.FC<JobApplicationsTableProps> = ({ jobApplications }) => {
 
   const formatDate = (date: Date): string => {
     return new Intl.DateTimeFormat('en-US', {
