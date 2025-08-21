@@ -143,4 +143,19 @@ export class JobApplicationsController {
   public static getAllJobApplications(): JobApplication[] {
     return this.mockData;
   }
+
+  public static addJobApplication(applicationData: Omit<JobApplication, 'id' | 'createDate' | 'modifiedDate'> & { appliedDate?: string }): JobApplication {
+    const appliedDate = applicationData.appliedDate ? new Date(applicationData.appliedDate) : new Date();
+    const { appliedDate: _, ...jobData } = applicationData;
+    
+    const newApplication: JobApplication = {
+      id: (this.mockData.length + 1).toString(),
+      ...jobData,
+      createDate: appliedDate,
+      modifiedDate: new Date()
+    };
+
+    this.mockData.push(newApplication);
+    return newApplication;
+  }
 }
