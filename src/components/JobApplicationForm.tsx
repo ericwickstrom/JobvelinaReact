@@ -106,14 +106,14 @@ const JobApplicationForm: React.FC<JobApplicationFormProps> = ({ onApplicationAd
         notes: ''
       });
       setErrors({});
-    } catch (error) {
+    } catch {
       setSubmitStatus('error');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleInputChange = (field: keyof FormData, value: string) => {
+  const handleInputChange = (field: keyof FormData, value: string | JobApplicationStatus) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     
     // Clear error when user starts typing
@@ -222,9 +222,9 @@ const JobApplicationForm: React.FC<JobApplicationFormProps> = ({ onApplicationAd
               onChange={(e) => handleInputChange('status', parseInt(e.target.value) as JobApplicationStatus)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 h-[42px]"
             >
-              {Object.values(JobApplicationStatus).filter(value => typeof value === 'number').map((status) => (
-                <option key={status} value={status}>
-                  {getStatusDisplayText(status as JobApplicationStatus)}
+              {Object.entries(JobApplicationStatus).map(([key, value]) => (
+                <option key={key} value={value}>
+                  {getStatusDisplayText(value)}
                 </option>
               ))}
             </select>

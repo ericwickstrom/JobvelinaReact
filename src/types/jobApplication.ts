@@ -1,11 +1,13 @@
-export enum JobApplicationStatus {
-  APPLIED = 0,
-  REJECTED = 1,
-  INTERVIEW_SCHEDULED = 2,
-  OFFER_RECEIVED = 3,
-  WITHDRAWN = 4,
-  UNDER_REVIEW = 5
-}
+export const JobApplicationStatus = {
+  APPLIED: 0,
+  REJECTED: 1,
+  INTERVIEW_SCHEDULED: 2,
+  OFFER_RECEIVED: 3,
+  WITHDRAWN: 4,
+  UNDER_REVIEW: 5
+} as const;
+
+export type JobApplicationStatus = (typeof JobApplicationStatus)[keyof typeof JobApplicationStatus]
 
 export interface JobApplication {
   id: string;
@@ -16,6 +18,7 @@ export interface JobApplication {
   modifiedDate: Date;
   status: JobApplicationStatus;
   notes?: string;
+  isDeleted?: boolean;
 }
 
 export function getStatusDisplayText(status: JobApplicationStatus): string {
@@ -38,7 +41,7 @@ export function getStatusDisplayText(status: JobApplicationStatus): string {
 }
 
 export function getStatusFromInt(value: number): JobApplicationStatus {
-  if (Object.values(JobApplicationStatus).includes(value)) {
+  if (Object.values(JobApplicationStatus).includes(value as JobApplicationStatus)) {
     return value as JobApplicationStatus;
   }
   throw new Error(`Invalid status value: ${value}`);
