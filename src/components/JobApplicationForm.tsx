@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import type { JobApplication } from '../types/jobApplication';
 import { JobApplicationStatus, getStatusDisplayText } from '../types/jobApplication';
 import { JobApplicationsController } from '../services/jobApplicationsController';
 
@@ -19,10 +18,11 @@ interface FormErrors {
 }
 
 interface JobApplicationFormProps {
-  onApplicationAdded: (application: JobApplication) => void;
+  onApplicationAdded: () => void;
+  onClose: () => void;
 }
 
-const JobApplicationForm: React.FC<JobApplicationFormProps> = ({ onApplicationAdded }) => {
+const JobApplicationForm: React.FC<JobApplicationFormProps> = ({ onApplicationAdded, onClose }) => {
   const getTodayDate = () => {
     const today = new Date();
     return today.toISOString().split('T')[0];
@@ -40,7 +40,6 @@ const JobApplicationForm: React.FC<JobApplicationFormProps> = ({ onApplicationAd
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
-  const [showNotes, setShowNotes] = useState(false);
 
   const platformOptions = [
     'LinkedIn',
@@ -76,7 +75,7 @@ const JobApplicationForm: React.FC<JobApplicationFormProps> = ({ onApplicationAd
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!validateForm()) {
+    if (!validateForm() || isSubmitting) {
       return;
     }
 
@@ -93,10 +92,10 @@ const JobApplicationForm: React.FC<JobApplicationFormProps> = ({ onApplicationAd
         notes: formData.notes.trim() || undefined
       };
 
-      const newApplication = JobApplicationsController.addJobApplication(applicationData);
-      onApplicationAdded(newApplication);
+      JobApplicationsController.addJobApplication(applicationData);
+      onApplicationAdded();
       
-      setSubmitStatus('success');
+      // Reset form for next use
       setFormData({
         company: '',
         jobTitle: '',
@@ -106,6 +105,11 @@ const JobApplicationForm: React.FC<JobApplicationFormProps> = ({ onApplicationAd
         notes: ''
       });
       setErrors({});
+      
+      // Close modal after successful submission with small delay
+      setTimeout(() => {
+        onClose();
+      }, 100);
     } catch {
       setSubmitStatus('error');
     } finally {
@@ -128,8 +132,21 @@ const JobApplicationForm: React.FC<JobApplicationFormProps> = ({ onApplicationAd
   };
 
   return (
-    <div className="bg-white shadow-lg rounded-lg overflow-hidden">
-      <form onSubmit={handleSubmit} className="p-6 space-y-6">
+    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+      <div className="relative top-10 mx-auto p-5 border max-w-6xl shadow-lg rounded-md bg-white">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-medium text-gray-900">Add New Job Application</h3>
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <form onSubmit={handleSubmit} className="space-y-6">
         {/* Main Fields Row */}
         <div className="grid grid-cols-11 gap-2 w-full">
           {/* Company Field */}
@@ -236,9 +253,9 @@ const JobApplicationForm: React.FC<JobApplicationFormProps> = ({ onApplicationAd
             <div className="flex gap-1">
               <button
                 type="button"
-                onClick={() => setShowNotes(!showNotes)}
-                title={showNotes ? 'Hide notes' : 'Show notes'}
-                className="flex-1 inline-flex items-center justify-center px-2 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 h-[42px]"
+                onClick={onClose}
+                title="Cancel"
+                className="flex-1 inline-flex items-center justify-center px-2 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 h-[42px]"
               >
                 <svg
                   className="w-4 h-4"
@@ -246,7 +263,7 @@ const JobApplicationForm: React.FC<JobApplicationFormProps> = ({ onApplicationAd
                   stroke="currentColor"
                   viewBox="0 0 24 24"
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
               <button
@@ -259,65 +276,35 @@ const JobApplicationForm: React.FC<JobApplicationFormProps> = ({ onApplicationAd
                     : 'bg-blue-600 text-white hover:bg-blue-700'
                 }`}
               >
-                {isSubmitting ? '...' : '+'}
+                {isSubmitting ? (
+                  '...'
+                ) : (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                )}
               </button>
             </div>
           </div>
         </div>
 
-        {/* Notes Textarea - Conditionally Rendered */}
-        {showNotes && (
-          <div className="transition-all duration-300 ease-in-out">
-            <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-2 text-left">
-              Notes
-            </label>
-            <textarea
-              id="notes"
-              value={formData.notes}
-              onChange={(e) => handleInputChange('notes', e.target.value)}
-              rows={4}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 h-[42px]"
-              placeholder="Notes"
-            />
-          </div>
-        )}
+        {/* Notes Textarea - Always Visible */}
+        <div>
+          <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-2 text-left">
+            Notes
+          </label>
+          <textarea
+            id="notes"
+            value={formData.notes}
+            onChange={(e) => handleInputChange('notes', e.target.value)}
+            rows={4}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            placeholder="Add any additional notes about this job application..."
+          />
+        </div>
 
-        {/* Success/Error Messages */}
-        {submitStatus === 'success' && (
-          <div className="bg-green-50 border border-green-200 rounded-md p-4">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <svg className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <p className="text-sm text-green-800">
-                  Job application has been successfully added to your tracking list!
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {submitStatus === 'error' && (
-          <div className="bg-red-50 border border-red-200 rounded-md p-4">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <p className="text-sm text-red-800">
-                  There was an error adding your job application. Please try again.
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
-      </form>
+        </form>
+      </div>
     </div>
   );
 };

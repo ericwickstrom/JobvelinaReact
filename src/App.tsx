@@ -7,13 +7,16 @@ import './App.css'
 
 function App() {
   const [jobApplications, setJobApplications] = useState<JobApplication[]>([]);
+  const [isFormVisible, setIsFormVisible] = useState(false);
 
   useEffect(() => {
     setJobApplications(JobApplicationsController.getAllJobApplications());
   }, []);
 
-  const handleNewApplication = (newApplication: JobApplication) => {
-    setJobApplications(prev => [...prev, newApplication]);
+  const handleNewApplication = () => {
+    // Refresh the list from the controller instead of manually adding
+    // This prevents duplicates since the controller already added it
+    setJobApplications(JobApplicationsController.getAllJobApplications());
   };
 
   const handleUpdateApplication = (updatedApplication: JobApplication) => {
@@ -33,8 +36,29 @@ function App() {
         </div>
         
         <div className="space-y-8">
-          <JobApplicationForm onApplicationAdded={handleNewApplication} />
-          <JobApplicationsTable jobApplications={jobApplications} onUpdate={handleUpdateApplication} />
+          {isFormVisible && (
+            <JobApplicationForm 
+              onApplicationAdded={handleNewApplication} 
+              onClose={() => setIsFormVisible(false)}
+            />
+          )}
+          
+          <div className="relative">
+            <div className="flex justify-end mb-4">
+              <button
+                onClick={() => setIsFormVisible(!isFormVisible)}
+                className={`inline-flex items-center justify-center w-10 h-10 rounded-full font-bold text-lg shadow-lg transition-all duration-200 ${
+                  isFormVisible
+                    ? 'bg-red-600 text-white hover:bg-red-700'
+                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                }`}
+                title={isFormVisible ? 'Hide form' : 'Show form'}
+              >
+                {isFormVisible ? '−' : '+'}
+              </button>
+            </div>
+            <JobApplicationsTable jobApplications={jobApplications} onUpdate={handleUpdateApplication} />
+          </div>
         </div>
       </div>
     </div>
