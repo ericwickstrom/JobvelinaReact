@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import type { JobApplication } from '../types/jobApplication';
 import { JobApplicationStatus, getStatusDisplayText } from '../types/jobApplication';
 import { JobApplicationsController } from '../services/jobApplicationsController';
@@ -8,14 +8,107 @@ interface JobApplicationsTableProps {
   onUpdate: (updatedApplication: JobApplication) => void;
 }
 
+type SortField = 'company' | 'jobTitle' | 'platform' | 'createDate' | 'modifiedDate' | 'status';
+type SortDirection = 'asc' | 'desc' | null;
+
 const JobApplicationsTable: React.FC<JobApplicationsTableProps> = ({ jobApplications, onUpdate }) => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editData, setEditData] = useState<Partial<JobApplication>>({});
   const [showInfoModal, setShowInfoModal] = useState<string | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState<string | null>(null);
+  const [sortField, setSortField] = useState<SortField>('modifiedDate');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 
-  // Filter out deleted applications
-  const visibleApplications = jobApplications.filter(app => !app.isDeleted);
+  // Handle column sorting
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      // Cycle through: asc -> desc -> default (null)
+      if (sortDirection === 'asc') {
+        setSortDirection('desc');
+      } else if (sortDirection === 'desc') {
+        setSortDirection(null);
+        setSortField('modifiedDate'); // Reset to default sort
+      } else {
+        setSortDirection('asc');
+      }
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  // Get sort icon for column headers
+  const getSortIcon = (field: SortField) => {
+    if (sortField !== field || sortDirection === null) {
+      return (
+        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
+        </svg>
+      );
+    }
+    
+    if (sortDirection === 'asc') {
+      return (
+        <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+        </svg>
+      );
+    }
+    
+    return (
+      <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+      </svg>
+    );
+  };
+
+  // Filter and sort applications
+  const sortedApplications = useMemo(() => {
+    const filtered = jobApplications.filter(app => !app.isDeleted);
+    
+    // Handle sorting
+    return [...filtered].sort((a, b) => {
+      let aValue: string | number;
+      let bValue: string | number;
+      
+      switch (sortField) {
+        case 'company':
+          aValue = a.company.toLowerCase();
+          bValue = b.company.toLowerCase();
+          break;
+        case 'jobTitle':
+          aValue = a.jobTitle.toLowerCase();
+          bValue = b.jobTitle.toLowerCase();
+          break;
+        case 'platform':
+          aValue = a.platform.toLowerCase();
+          bValue = b.platform.toLowerCase();
+          break;
+        case 'createDate':
+          aValue = a.createDate.getTime();
+          bValue = b.createDate.getTime();
+          break;
+        case 'modifiedDate':
+          aValue = a.modifiedDate.getTime();
+          bValue = b.modifiedDate.getTime();
+          break;
+        case 'status':
+          aValue = a.status;
+          bValue = b.status;
+          break;
+        default:
+          return 0;
+      }
+      
+      if (aValue < bValue) {
+        return sortDirection === 'asc' ? -1 : 1;
+      }
+      if (aValue > bValue) {
+        return sortDirection === 'asc' ? 1 : -1;
+      }
+      return 0;
+    });
+  }, [jobApplications, sortField, sortDirection]);
 
   const formatDate = (date: Date): string => {
     return new Intl.DateTimeFormat('en-US', {
@@ -104,7 +197,7 @@ const JobApplicationsTable: React.FC<JobApplicationsTableProps> = ({ jobApplicat
     return jobApplications.find(app => app.id === showDeleteModal);
   };
 
-  if (visibleApplications.length === 0) {
+  if (sortedApplications.length === 0) {
     return (
       <div className="bg-white shadow-lg rounded-lg p-8 text-center">
         <div className="text-gray-500 text-lg mb-2">No job applications found</div>
@@ -123,23 +216,59 @@ const JobApplicationsTable: React.FC<JobApplicationsTableProps> = ({ jobApplicat
         <table className="w-full">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Company
+              <th 
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+                onClick={() => handleSort('company')}
+              >
+                <div className="flex items-center space-x-1">
+                  <span>Company</span>
+                  {getSortIcon('company')}
+                </div>
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Job Title
+              <th 
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+                onClick={() => handleSort('jobTitle')}
+              >
+                <div className="flex items-center space-x-1">
+                  <span>Job Title</span>
+                  {getSortIcon('jobTitle')}
+                </div>
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Platform
+              <th 
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+                onClick={() => handleSort('platform')}
+              >
+                <div className="flex items-center space-x-1">
+                  <span>Platform</span>
+                  {getSortIcon('platform')}
+                </div>
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Applied Date
+              <th 
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+                onClick={() => handleSort('createDate')}
+              >
+                <div className="flex items-center space-x-1">
+                  <span>Applied Date</span>
+                  {getSortIcon('createDate')}
+                </div>
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Last Updated
+              <th 
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+                onClick={() => handleSort('modifiedDate')}
+              >
+                <div className="flex items-center space-x-1">
+                  <span>Last Updated</span>
+                  {getSortIcon('modifiedDate')}
+                </div>
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Status
+              <th 
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+                onClick={() => handleSort('status')}
+              >
+                <div className="flex items-center space-x-1">
+                  <span>Status</span>
+                  {getSortIcon('status')}
+                </div>
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Actions
@@ -147,7 +276,7 @@ const JobApplicationsTable: React.FC<JobApplicationsTableProps> = ({ jobApplicat
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200 text-left">
-            {visibleApplications.map((application: JobApplication) => {
+            {sortedApplications.map((application: JobApplication) => {
               const isEditing = editingId === application.id;
               
               return (
@@ -297,7 +426,7 @@ const JobApplicationsTable: React.FC<JobApplicationsTableProps> = ({ jobApplicat
 
       {/* Mobile Cards */}
       <div className="lg:hidden">
-        {visibleApplications.map((application: JobApplication) => (
+        {sortedApplications.map((application: JobApplication) => (
           <div key={application.id} className="border-b border-gray-200 p-4 hover:bg-gray-50 transition-colors duration-150">
             <div className="flex justify-between items-start mb-2">
               <div>
